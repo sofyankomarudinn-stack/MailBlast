@@ -1,0 +1,1763 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MailBlast GAS - Panel Admin v2.1</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- SheetJS for Excel Export/Import -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style> body { font-family: 'Inter', sans-serif; } </style>
+</head>
+<body class="h-full bg-slate-50 text-slate-800 antialiased overflow-hidden">
+
+    <div id="app" class="flex h-full w-full">
+
+        <!-- SIDEBAR NAVIGATION -->
+        <aside class="w-64 bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 z-30 flex-shrink-0">
+            <div class="p-5 border-b border-slate-800 flex items-center space-x-3">
+                <div class="bg-indigo-600 text-white p-2 rounded-lg flex items-center justify-center">
+                    <i class="fa-solid fa-paper-plane text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-white text-base">MailBlast GAS</h1>
+                    <p class="text-xs text-slate-400">Panel Admin v2.1</p>
+                </div>
+            </div>
+
+            <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+                <a href="#" onclick="switchTab('dashboard')" id="nav-dashboard" class="flex items-center px-3 py-2.5 rounded-lg text-sm font-medium bg-indigo-600 text-white transition-colors">
+                    <i class="fa-solid fa-chart-pie w-5 text-center mr-3"></i> Dasbor
+                </a>
+                <a href="#" onclick="switchTab('master')" id="nav-master" class="flex items-center px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-800 text-slate-300 transition-colors">
+                    <i class="fa-solid fa-list-check w-5 text-center mr-3"></i> Manajemen Data
+                </a>
+                <a href="#" onclick="switchTab('template')" id="nav-template" class="flex items-center px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-800 text-slate-300 transition-colors">
+                    <i class="fa-solid fa-pen-nib w-5 text-center mr-3"></i> Templat Surat Elektronik
+                </a>
+            </nav>
+
+            <div class="p-4 border-t border-slate-800">
+                <div class="bg-slate-800/60 p-3 rounded-lg text-xs space-y-1">
+                    <div class="flex justify-between text-slate-400">
+                        <span>Kuota Gmail:</span>
+                        <span id="quota-display" class="text-emerald-400 font-semibold">Memuat...</span>
+                    </div>
+                    <div class="w-full bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                        <div class="bg-emerald-500 h-full w-[95%]"></div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="flex-1 flex flex-col h-full overflow-hidden min-w-0">
+            
+            <!-- TOP HEADER -->
+            <header class="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between z-30 flex-shrink-0 relative">
+                <div class="flex items-center space-x-3">
+                    <h2 id="page-title" class="text-lg font-bold text-slate-800">Dasbor dan Data Penerima</h2>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="loadAppData()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3.5 py-1.5 rounded-lg text-sm font-medium transition flex items-center space-x-2 border border-slate-300">
+                        <i class="fa-solid fa-rotate text-xs"></i>
+                        <span class="hidden md:inline">Sinkronisasi GSheet</span>
+                    </button>
+                    <div class="h-8 w-px bg-slate-200 hidden md:block"></div>
+                    <div class="flex items-center space-x-2">
+                        <div id="active-user-avatar" class="h-8 w-8 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-sm">A</div>
+                        <span id="active-user-label" class="text-sm font-semibold text-slate-700 hidden md:inline">Admin Utama</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- DYNAMIC VIEW CONTAINER -->
+            <div class="flex-1 flex flex-col p-4 md:p-6 bg-slate-50 min-h-0 relative">
+
+                <!-- DASHBOARD & RECIPIENTS VIEW -->
+                <div id="view-dashboard" class="flex flex-col h-full space-y-4">
+                    
+                    <!-- STATS CONTAINER (Sticky Top) -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 flex-shrink-0">
+                        
+                        <!-- KARTU TOTAL -->
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between relative overflow-hidden group hover:border-indigo-200 transition-colors">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Total Penerima</p>
+                                    <h3 id="stat-total" class="text-3xl font-bold text-slate-800 mt-1 leading-none">0</h3>
+                                </div>
+                                <div class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-500 transition-colors">
+                                    <i class="fa-solid fa-inbox text-lg"></i>
+                                </div>
+                            </div>
+                            <!-- Indikator Tren -->
+                            <div class="mt-3 text-[11px] text-slate-500 font-medium flex items-center">
+                                <i class="fa-solid fa-list-ul mr-1.5 text-slate-400"></i> Total baris data terdaftar
+                            </div>
+                        </div>
+
+                        <!-- KARTU TERKIRIM -->
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between relative overflow-hidden group hover:border-emerald-200 transition-colors">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Terkirim</p>
+                                    <h3 id="stat-sent" class="text-3xl font-bold text-emerald-600 mt-1 leading-none">0</h3>
+                                </div>
+                                <div class="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-500 group-hover:bg-emerald-100 transition-colors">
+                                    <i class="fa-solid fa-check-double text-lg"></i>
+                                </div>
+                            </div>
+                            <!-- Indikator Tren -->
+                            <div class="mt-3 text-[11px] text-slate-500 font-medium flex items-center">
+                                <span class="text-emerald-500 mr-1.5 flex items-center"><i class="fa-solid fa-arrow-trend-up"></i></span> Berhasil terkirim
+                            </div>
+                        </div>
+
+                        <!-- KARTU DRAFT -->
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between relative overflow-hidden group hover:border-amber-200 transition-colors">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Draft</p>
+                                    <h3 id="stat-pending" class="text-3xl font-bold text-amber-500 mt-1 leading-none">0</h3>
+                                </div>
+                                <div class="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-500 group-hover:bg-amber-100 transition-colors">
+                                    <i class="fa-solid fa-file-lines text-lg"></i>
+                                </div>
+                            </div>
+                            <!-- Indikator Tren -->
+                            <div class="mt-3 text-[11px] text-slate-500 font-medium flex items-center">
+                                <i class="fa-regular fa-clock mr-1.5 text-amber-400"></i> Menunggu antrean
+                            </div>
+                        </div>
+
+                        <!-- KARTU KUOTA GMAIL -->
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between relative overflow-hidden">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <p class="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Penggunaan Kuota</p>
+                                    <h3 id="stat-quota" class="text-xl font-bold text-indigo-600 mt-1.5 leading-none">-</h3>
+                                </div>
+                                <div class="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-500">
+                                    <i class="fa-brands fa-google text-lg"></i>
+                                </div>
+                            </div>
+                            <!-- Bilah Kemajuan (Progress Bar) -->
+                            <div class="mt-auto">
+                                <div class="flex justify-between text-[10px] font-semibold text-slate-500 mb-1.5">
+                                    <span>Kapasitas Harian</span>
+                                    <span id="stat-quota-percent" class="text-indigo-600">0%</span>
+                                </div>
+                                <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                                    <div id="stat-quota-bar" class="bg-indigo-500 h-full transition-all duration-1000 ease-out" style="width: 0%;"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- TABLE CONTAINER -->
+                    <div class="flex flex-col flex-1 bg-white rounded-xl border border-slate-200 shadow-sm min-h-0 overflow-hidden">
+                        
+                        <!-- TOOLBAR -->
+                        <div class="p-3 border-b border-slate-200 flex flex-col lg:flex-row items-center justify-between gap-3 flex-shrink-0 bg-white relative z-20">
+                            <div class="flex items-center space-x-2 w-full lg:w-auto flex-wrap gap-y-2">
+                                
+                                <!-- DROPDOWN TAMPILKAN BARIS (PINDAH KE ATAS) -->
+                                <div class="flex items-center space-x-2 text-xs text-slate-600 mr-2 bg-slate-50 px-2 py-1 rounded border border-slate-200">
+                                    <span>Tampilkan</span>
+                                    <select id="rows-per-page" onchange="changeRowsPerPage(this.value)" class="bg-transparent font-semibold text-slate-700 focus:outline-none cursor-pointer">
+                                        <option value="10" selected>10</option>
+                                        <option value="25">25</option>
+                                        <option value="50">50</option>
+                                        <option value="100">100</option>
+                                    </select>
+                                    <span>baris</span>
+                                </div>
+
+                                <div class="relative flex-1 md:w-56 min-w-[180px]">
+                                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400"><i class="fa-solid fa-search text-xs"></i></span>
+                                    <input type="text" id="search-input" oninput="updateTable()" placeholder="Cari data..." class="w-full pl-8 pr-3 py-1.5 border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                </div>
+
+                                <select id="kegiatan-filter" onchange="updateTable()" class="border border-slate-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-700 max-w-[200px] truncate">
+                                    <option value="">Semua Kegiatan</option>
+                                </select>
+                                
+                                <select id="status-filter" onchange="updateTable()" class="border border-slate-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-700">
+                                    <option value="">Semua Status</option>
+                                    <option value="terkirim">Terkirim</option>
+                                    <option value="draft">Draft</option>
+                                </select>
+                            </div>
+                            
+                            <div class="flex items-center space-x-2 w-full lg:w-auto justify-end flex-wrap gap-y-2">
+                                <div class="relative">
+                                    <button onclick="toggleDropdown('recipient-excel-dropdown')" class="bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition shadow-sm flex items-center space-x-1.5">
+                                        <i class="fa-solid fa-file-excel text-emerald-600"></i>
+                                        <span>Excel</span>
+                                        <i class="fa-solid fa-chevron-down text-[10px] ml-0.5"></i>
+                                    </button>
+                                    <div id="recipient-excel-dropdown" class="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-xl hidden z-30 py-1">
+                                        <button onclick="downloadRecipientsTemplate()" class="w-full text-left px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center space-x-2">
+                                            <i class="fa-solid fa-file-arrow-down text-indigo-600 w-3"></i>
+                                            <span>Unduh Templat Impor</span>
+                                        </button>
+                                        <button onclick="exportRecipientsExcel()" class="w-full text-left px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center space-x-2">
+                                            <i class="fa-solid fa-file-excel text-emerald-600 w-3"></i>
+                                            <span>Ekspor Data (XLSX)</span>
+                                        </button>
+                                        <div class="border-t border-slate-100 my-1"></div>
+                                        <input type="file" id="recipient-excel-file" accept=".xls, .xlsx, .csv" class="hidden" onchange="handleRecipientExcelUpload(this)">
+                                        <button onclick="document.getElementById('recipient-excel-file').click()" class="w-full text-left px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center space-x-2">
+                                            <i class="fa-solid fa-upload text-amber-600 w-3"></i>
+                                            <span>Impor dari Excel</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <button onclick="deleteSelectedRecipients()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 px-3 py-1.5 rounded-lg text-xs font-medium transition shadow-sm flex items-center">
+                                    <i class="fa-solid fa-trash-can mr-1.5"></i> Hapus (<span id="delete-count">0</span>)
+                                </button>
+                                <button onclick="openPreviewModalForChecked()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition shadow-sm flex items-center">
+                                    <i class="fa-solid fa-paper-plane mr-1.5"></i> Blast (<span id="checked-count">0</span>)
+                                </button>
+                                <button onclick="openAddRowModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition shadow-sm flex items-center">
+                                    <i class="fa-solid fa-plus mr-1.5"></i> Tambah
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- TABLE SCROLLABLE AREA -->
+                        <div class="flex-1 overflow-y-auto overflow-x-hidden relative bg-white">
+                            <table class="w-full text-left border-collapse table-fixed text-[11px] lg:text-xs">
+                                <thead class="sticky top-0 bg-slate-100 shadow-[0_1px_0_0_#e2e8f0] z-10">
+                                    <tr class="text-slate-600 font-semibold uppercase tracking-wider">
+                                        <th class="px-2 py-2.5 w-10 text-center"><input type="checkbox" id="select-all" onchange="toggleAllCheckboxes(this)" class="rounded text-indigo-600 focus:ring-indigo-500"></th>
+                                        <th class="px-2 py-2.5 w-10 text-center">No.</th>
+                                        <th class="px-2 py-2.5 w-2/12">Kegiatan</th>
+                                        <th class="px-2 py-2.5 w-2/12">Mata Pelajaran</th>
+                                        <th class="px-2 py-2.5 w-3/12">Penulis dan Instansi</th>
+                                        <th class="px-2 py-2.5 w-2/12">Surel</th>
+                                        <th class="px-2 py-2.5 w-10 text-center" title="Unduh"><i class="fa-solid fa-download"></i></th>
+                                        <th class="px-2 py-2.5 w-10 text-center" title="Unggah"><i class="fa-solid fa-upload"></i></th>
+                                        <th class="px-2 py-2.5 w-20 text-center">Status</th>
+                                        <th class="px-2 py-2.5 w-24 text-center">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recipient-tbody" class="divide-y divide-slate-200">
+                                    <!-- Populated dynamically via pagination -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- PAGINATION FOOTER -->
+                        <div class="px-4 py-2 border-t border-slate-200 bg-white flex items-center justify-between flex-shrink-0 z-10">
+                            <!-- INFO RENTANG DATA (Tampil di Kiri Bawah) -->
+                            <div id="data-range-info" class="text-xs text-slate-600 font-medium">
+                                Menampilkan 0-0 dari 0 data
+                            </div>
+                            
+                            <!-- TOMBOL PAGINASI (Tampil di Kanan Bawah) -->
+                            <div class="flex items-center space-x-4">
+                                <span id="page-info" class="text-xs text-slate-600 font-medium">Halaman 1 dari 1</span>
+                                <div class="flex space-x-1">
+                                    <button id="btn-prev-page" onclick="changePage(-1)" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded disabled:opacity-50 disabled:cursor-not-allowed transition"><i class="fa-solid fa-chevron-left text-xs"></i></button>
+                                    <button id="btn-next-page" onclick="changePage(1)" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded disabled:opacity-50 disabled:cursor-not-allowed transition"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- KELOLA EVENT VIEW -->
+                <div id="view-master" class="h-full flex flex-col gap-6 hidden pb-6">
+                    <div class="bg-white border border-slate-200 p-6 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm relative z-20 flex-shrink-0">
+                        <div class="space-y-1">
+                            <h3 class="font-bold text-slate-800 text-base"><i class="fa-solid fa-file-excel mr-2 text-emerald-600"></i> Manajemen Data</h3>
+                            <p class="text-xs text-slate-500">Mengelola Daftar Mata Pelajaran dan Kegiatan.</p>
+                        </div>
+                        <div class="flex items-center space-x-3 flex-wrap gap-y-2">
+                            <div class="relative">
+                                <button onclick="toggleDropdown('master-excel-dropdown')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition shadow-sm flex items-center space-x-2">
+                                    <i class="fa-solid fa-file-excel"></i>
+                                    <span>Master Excel</span>
+                                    <i class="fa-solid fa-chevron-down text-xs ml-1"></i>
+                                </button>
+                                <div id="master-excel-dropdown" class="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-xl hidden z-30 py-1">
+                                    <button onclick="downloadMasterTemplate()" class="w-full text-left px-4 py-2.5 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center space-x-2">
+                                        <i class="fa-solid fa-file-arrow-down text-indigo-600 w-4"></i>
+                                        <span>Unduh Templat Master</span>
+                                    </button>
+                                    <input type="file" id="bulk-excel-file" accept=".xls, .xlsx, .csv" class="hidden" onchange="handleBulkExcelUpload(this)">
+                                    <button onclick="document.getElementById('bulk-excel-file').click()" class="w-full text-left px-4 py-2.5 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center space-x-2">
+                                        <i class="fa-solid fa-upload text-amber-600 w-4"></i>
+                                        <span>Impor Master Excel</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10 flex-1 min-h-0">
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col min-h-0 h-full">
+                            <div class="flex justify-between items-center mb-4 flex-shrink-0">
+                                <h3 class="font-bold text-slate-800 text-base">Manajemen Mata Pelajaran</h3>
+                                <button onclick="openMasterModal('mapel', 'add')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold transition"><i class="fa-solid fa-plus mr-1"></i> Tambah Mata Pelajaran</button>
+                            </div>
+                            <div id="list-mapel" class="space-y-2 overflow-y-auto flex-1 pr-2"></div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col min-h-0 h-full">
+                            <div class="flex justify-between items-center mb-4 flex-shrink-0">
+                                <h3 class="font-bold text-slate-800 text-base">Manajemen Kegiatan</h3>
+                                <button onclick="openMasterModal('kegiatan', 'add')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold transition"><i class="fa-solid fa-plus mr-1"></i> Tambah Kegiatan</button>
+                            </div>
+                            <div id="list-kegiatan" class="space-y-2 overflow-y-auto flex-1 pr-2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TEMPLATE VIEW -->
+                <div id="view-template" class="h-full flex flex-col lg:flex-row gap-6 hidden pb-6 min-h-0 overflow-y-auto lg:overflow-hidden">
+                    <!-- DAFTAR TEMPLAT (KIRI) -->
+                    <div class="w-full lg:w-80 xl:w-96 bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col flex-shrink-0 lg:h-full min-h-[280px] lg:min-h-0">
+                        <div class="flex justify-between items-start gap-2 mb-3 flex-shrink-0">
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-base">Daftar Templat</h3>
+                                <p class="text-xs text-slate-500">Pilih templat untuk pengiriman surel.</p>
+                            </div>
+                            <button onclick="resetTemplateEditor()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition shadow-sm flex items-center space-x-1.5 flex-shrink-0">
+                                <i class="fa-solid fa-plus"></i>
+                                <span>Buat Baru</span>
+                            </button>
+                        </div>
+
+                        <!-- INDIKATOR TEMPLAT AKTIF -->
+                        <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-2.5 mb-3 flex items-center justify-between text-xs flex-shrink-0">
+                            <div class="flex items-center space-x-2 min-w-0">
+                                <i class="fa-solid fa-circle-check text-emerald-600 text-sm flex-shrink-0"></i>
+                                <div class="truncate">
+                                    <span class="text-emerald-800 font-medium">Digunakan: </span>
+                                    <span id="active-template-name" class="font-bold text-emerald-900">Belum ada</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- LIST ITEM TEMPLAT -->
+                        <div id="list-templates" class="space-y-2.5 overflow-y-auto flex-1 pr-1">
+                            <!-- Diisi secara dinamis -->
+                        </div>
+                    </div>
+
+                    <!-- EDITOR DESAIN TEMPLAT (KANAN) -->
+                    <div class="flex-1 bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col space-y-4 lg:h-full min-h-0 min-w-0 lg:overflow-hidden">
+                        <div class="flex flex-wrap justify-between items-center gap-2 border-b border-slate-100 pb-3 flex-shrink-0">
+                            <div class="flex items-center space-x-2.5">
+                                <h3 class="font-bold text-slate-800 text-base">Desain Templat Surel</h3>
+                                <span id="tpl-mode-badge" class="bg-indigo-50 text-indigo-700 border border-indigo-200 text-[11px] px-2.5 py-0.5 rounded-full font-semibold">Buat Templat Baru</span>
+                            </div>
+                            <button onclick="openTemplatePreviewMain()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5 border border-slate-300">
+                                <i class="fa-solid fa-eye text-indigo-600"></i>
+                                <span>Pratinjau Hasil Templat</span>
+                            </button>
+                        </div>
+
+                        <input type="hidden" id="tpl-id" value="">
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 flex-shrink-0">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1.5">Nama Templat</label>
+                                <input type="text" id="tpl-name" placeholder="Misal: Undangan Penulis..." class="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1.5">Baris Subjek Surel</label>
+                                <input type="text" id="tpl-subject" placeholder="Masukkan subjek surel..." class="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1.5">Nama Pengirim</label>
+                                <input type="text" id="tpl-sender" placeholder="Misal: Puspendik..." class="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                        </div>
+
+                        <div class="border border-slate-300 rounded-xl overflow-hidden flex-1 flex flex-col min-h-0">
+                            <div class="bg-slate-100 border-b border-slate-300 p-2 flex flex-wrap gap-2 items-center text-slate-600 text-sm flex-shrink-0">
+                                <button onclick="formatText('bold')" class="p-1.5 hover:bg-slate-200 rounded" title="Tebal"><i class="fa-solid fa-bold"></i></button>
+                                <button onclick="formatText('italic')" class="p-1.5 hover:bg-slate-200 rounded" title="Miring"><i class="fa-solid fa-italic"></i></button>
+                                <button onclick="formatText('underline')" class="p-1.5 hover:bg-slate-200 rounded" title="Garis Bawah"><i class="fa-solid fa-underline"></i></button>
+                                <button onclick="insertBox()" class="p-1.5 hover:bg-slate-200 rounded" title="Buat Kotak Blok"><i class="fa-regular fa-square"></i></button>
+                                <div class="h-4 w-px bg-slate-300"></div>
+                                <button onclick="formatText('insertUnorderedList')" class="p-1.5 hover:bg-slate-200 rounded" title="Bullet List"><i class="fa-solid fa-list-ul"></i></button>
+                                <button onclick="formatText('insertOrderedList')" class="p-1.5 hover:bg-slate-200 rounded" title="Numbered List"><i class="fa-solid fa-list-ol"></i></button>
+                                <div class="h-4 w-px bg-slate-300"></div>
+                                <span class="text-xs text-slate-500 font-semibold ml-1">Variabel:</span>
+                                <button onclick="insertVar('{{Nama Penulis}}')" class="bg-white border border-slate-300 px-2 py-1 rounded text-xs hover:bg-indigo-50 hover:text-indigo-600 text-slate-700"><code>{{Nama Penulis}}</code></button>
+                                <button onclick="insertVar('{{Instansi}}')" class="bg-white border border-slate-300 px-2 py-1 rounded text-xs hover:bg-indigo-50 hover:text-indigo-600 text-slate-700"><code>{{Instansi}}</code></button>
+                                <button onclick="insertVar('{{Nama Kegiatan}}')" class="bg-white border border-slate-300 px-2 py-1 rounded text-xs hover:bg-indigo-50 hover:text-indigo-600 text-slate-700"><code>{{Nama Kegiatan}}</code></button>
+                                <button onclick="insertVar('{{Mapel}}')" class="bg-white border border-slate-300 px-2 py-1 rounded text-xs hover:bg-indigo-50 hover:text-indigo-600 text-slate-700" title="Variabel Mata Pelajaran"><code>{{Mapel}}</code></button>
+                                <button onclick="insertVar('{{Unduh File}}')" class="bg-white border border-slate-300 px-2 py-1 rounded text-xs hover:bg-indigo-50 text-indigo-700 font-semibold"><code>{{Unduh File}}</code></button>
+                                <button onclick="insertVar('{{Unggah File}}')" class="bg-white border border-slate-300 px-2 py-1 rounded text-xs hover:bg-emerald-50 text-emerald-700 font-semibold"><code>{{Unggah File}}</code></button>
+                            </div>
+                            <div id="tpl-editor" class="p-5 min-h-[240px] flex-1 overflow-y-auto bg-white text-slate-800 text-sm leading-relaxed outline-none space-y-3" contenteditable="true">
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end space-x-3 pt-1 flex-shrink-0">
+                            <button onclick="resetTemplateEditor()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-lg text-sm font-medium transition">Reset Form</button>
+                            <button onclick="saveTemplateToBackend()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition shadow-sm flex items-center space-x-2">
+                                <i class="fa-solid fa-floppy-disk"></i>
+                                <span id="btn-save-tpl-text">Simpan Templat</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- NOTIFICATION TOAST -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl text-sm flex items-center space-x-3 transform translate-y-24 opacity-0 transition-all duration-300 z-50">
+        <i class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
+        <span id="toast-message">Tindakan berhasil!</span>
+    </div>
+
+    <!-- MODALS -->
+    
+    <!-- ADD/EDIT RECIPIENT ROW MODAL -->
+    <div id="row-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-200 pb-3">
+                <h4 id="row-modal-title" class="font-bold text-slate-800 text-base">Tambah Data Penerima</h4>
+                <button onclick="closeRowModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <input type="hidden" id="input-row-index" value="-1">
+            <div class="space-y-3 text-sm">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Kegiatan</label>
+                    <select id="input-kegiatan" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Mata Pelajaran</label>
+                    <select id="input-mapel" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></select>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Penulis</label>
+                        <input type="text" id="input-penulis" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Instansi</label>
+                        <input type="text" id="input-instansi" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Surel Penerima</label>
+                    <input type="email" id="input-email" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Unduh (Tautan / Teks)</label>
+                        <input type="text" id="input-download" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Unggah (Tautan / Teks)</label>
+                        <input type="text" id="input-upload" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Status Pengiriman</label>
+                    <select id="input-status" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="Draft">Draft</option>
+                        <option value="Proses">Proses</option>
+                        <option value="Terkirim">Terkirim</option>
+                        <option value="Gagal">Gagal</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex justify-end space-x-2 pt-2">
+                <button onclick="closeRowModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium">Batal</button>
+                <button onclick="saveRowData()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium">Simpan Data</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MASTER POP-UP -->
+    <div id="master-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-200 pb-3">
+                <h4 id="master-modal-title" class="font-bold text-slate-800 text-base">Tambah Master</h4>
+                <button onclick="closeMasterModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <input type="hidden" id="master-type" value="">
+            <input type="hidden" id="master-code" value="">
+            <div class="space-y-3 text-sm">
+                <div>
+                    <label id="master-label-name" class="block text-xs font-semibold text-slate-600 mb-1">Nama Item</label>
+                    <input type="text" id="master-input-name" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+            </div>
+            <div class="flex justify-end space-x-2 pt-2">
+                <button onclick="closeMasterModal()" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-medium">Batal</button>
+                <button onclick="saveMasterItemModal()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium">Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PREVIEW & BLAST MODAL -->
+    <div id="preview-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm items-center justify-center z-50 p-4 hidden">
+        <!-- Hapus p-6 dan ganti menjadi flex flex-col -->
+        <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl max-h-[90vh] flex flex-col overflow-hidden">
+            
+            <!-- FIXED HEADER & CONTROLS (Tidak ikut di-scroll) -->
+            <div class="px-6 pt-6 pb-4 border-b border-slate-200 bg-white shrink-0 z-20 space-y-4">
+                <!-- HEADER -->
+                <div class="flex justify-between items-center">
+                    <h4 class="font-bold text-slate-800 text-base flex items-center">
+                        <i class="fa-solid fa-paper-plane text-indigo-600 mr-2"></i> Pratinjau Surel (<span id="preview-counter">1 dari 1</span>)
+                    </h4>
+                    <button onclick="closePreviewModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+                </div>
+
+                <!-- ACTION CONTROLS -->
+                <div class="flex flex-wrap justify-between items-center gap-2">
+                    <div class="flex space-x-2">
+                        <button onclick="navigatePreview(-1)" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold flex items-center space-x-1">
+                            <i class="fa-solid fa-chevron-left"></i> <span>Sebelumnya</span>
+                        </button>
+                        <button onclick="navigatePreview(1)" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold flex items-center space-x-1">
+                            <span>Berikutnya</span> <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="closePreviewModal()" class="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold">Tutup</button>
+                        <button onclick="executeRealBlastFromPreview()" id="btn-popup-start" class="px-5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition shadow-sm flex items-center space-x-2">
+                            <i class="fa-solid fa-paper-plane"></i>
+                            <span id="btn-popup-start-text">Kirim Semua Tercentang</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SCROLLABLE BODY (Area ini saja yang bisa di-scroll) -->
+            <div class="p-6 overflow-y-auto space-y-4">
+                
+                <!-- PROGRESS BAR -->
+                <div id="blast-progress-container" class="hidden space-y-2">
+                    <div class="flex justify-between items-center text-xs font-semibold">
+                        <span id="blast-status-label" class="text-indigo-600">Progres Pengiriman...</span>
+                        <span id="popup-progress-text">0 dari 0 terkirim</span>
+                    </div>
+                    <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
+                        <div id="popup-progress-bar" class="bg-indigo-600 h-full w-[0%] transition-all duration-300"></div>
+                    </div>
+                </div>
+
+                <!-- RECIPIENT META INFO -->
+                <div class="space-y-2 text-sm bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <div><span class="font-semibold text-slate-500 text-xs">Templat Digunakan:</span> <span id="prev-template-name" class="font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded text-xs">-</span></div>
+                    <div><span class="font-semibold text-slate-500 text-xs">Pengirim:</span> <span id="prev-sender" class="font-semibold text-slate-800"></span></div>
+                    <div><span class="font-semibold text-slate-500 text-xs">Penerima:</span> <span id="prev-name" class="font-semibold text-slate-800"></span> (<span id="prev-email" class="text-indigo-600"></span>)</div>
+                    <div><span class="font-semibold text-slate-500 text-xs">Kegiatan & Mata Pelajaran:</span> <span id="prev-activity" class="text-slate-800"></span> (<span id="prev-mapel"></span>)</div>
+                </div>
+
+                <!-- PREVIEW BODY -->
+                <div class="border border-slate-200 rounded-xl p-4 bg-white text-xs space-y-3">
+                    <div class="font-semibold text-slate-700 border-b pb-1">Subjek: <span id="prev-subject-text">-</span></div>
+                    <div id="prev-rendered-body" class="space-y-2 text-slate-700 leading-relaxed"></div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- INFO LOG MODAL -->
+    <div id="info-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm items-center justify-center z-50 p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-200 pb-3">
+                <h4 class="font-bold text-slate-800 text-base"><i class="fa-solid fa-circle-info text-indigo-600 mr-2"></i> Informasi Baris & Log</h4>
+                <button onclick="closeInfoModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="space-y-3 text-sm" id="info-content-body">
+                <!-- Populated dynamically -->
+            </div>
+            <div class="flex justify-end pt-2">
+                <button onclick="closeInfoModal()" class="px-4 py-2 bg-slate-800 text-white rounded-lg text-sm font-medium">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONFIRMATION MODAL (POP-UP MODERN) -->
+    <div id="confirm-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center z-[60] p-4 transition-opacity">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-5 text-center transform scale-95 transition-transform" id="confirm-modal-content">
+            <div class="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-2">
+                <i class="fa-solid fa-triangle-exclamation text-3xl"></i>
+            </div>
+            <h4 id="confirm-modal-title" class="font-bold text-slate-800 text-lg">Konfirmasi</h4>
+            <p id="confirm-modal-message" class="text-sm text-slate-500 leading-relaxed">Apakah Anda yakin ingin melakukan tindakan ini?</p>
+            <div class="flex justify-center space-x-3 pt-4 border-t border-slate-100">
+                <button onclick="closeConfirmModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition">Batal</button>
+                <button id="confirm-modal-btn" class="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-sm font-semibold transition shadow-sm">Ya, Lanjutkan</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let globalAppData = { recipients: [], kegiatanList: [], mapelList: [], templateList: [], template: {}, quota: 0 };
+        let filteredRecipients = [];
+        let currentPage = 1;
+        let rowsPerPage = 10;
+        let currentEditingTemplateId = null;
+
+        window.onload = function() {
+            loadAppData();
+            window.addEventListener('click', function(e) {
+                if (!e.target.closest('[onclick^="toggleDropdown"]')) {
+                    document.querySelectorAll('.absolute').forEach(el => {
+                        if(el.id && el.id.includes('dropdown')) el.classList.add('hidden');
+                    });
+                }
+            });
+
+            // Auto-sync setiap 30 detik (mode senyap)
+            setInterval(() => loadAppData(true), 30000);
+
+            // Auto-sync saat kembali fokus ke tab (mode senyap)
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') {
+                    loadAppData(true);
+                }
+            });
+        };
+
+        function toggleDropdown(id) {
+            const dropdown = document.getElementById(id);
+            const isHidden = dropdown.classList.contains('hidden');
+            document.querySelectorAll('.absolute').forEach(el => {
+                if(el.id && el.id.includes('dropdown')) el.classList.add('hidden');
+            });
+            if(isHidden) dropdown.classList.remove('hidden');
+        }
+
+        function showNotification(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').innerText = msg;
+            toast.classList.remove('translate-y-24', 'opacity-0');
+            setTimeout(() => { toast.classList.add('translate-y-24', 'opacity-0'); }, 3000);
+        }
+
+        // ================= CONFIRMATION MODAL LOGIC =================
+        let confirmActionCallback = null;
+        function showConfirm(title, message, callback) {
+            document.getElementById('confirm-modal-title').innerText = title;
+            document.getElementById('confirm-modal-message').innerText = message;
+            confirmActionCallback = callback;
+            
+            const modal = document.getElementById('confirm-modal');
+            const content = document.getElementById('confirm-modal-content');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                content.classList.remove('scale-95');
+                content.classList.add('scale-100');
+            }, 10);
+        }
+        function closeConfirmModal() {
+            const modal = document.getElementById('confirm-modal');
+            const content = document.getElementById('confirm-modal-content');
+            content.classList.remove('scale-100');
+            content.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                confirmActionCallback = null;
+            }, 150);
+        }
+        document.getElementById('confirm-modal-btn').addEventListener('click', () => {
+            if (confirmActionCallback) confirmActionCallback();
+            closeConfirmModal();
+        });
+
+        function loadAppData(silent = false) {
+            if (!silent) showNotification('Menyinkronkan data...');
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler(data => {
+                        if (!data || !Array.isArray(data.recipients)) {
+                            if (!silent) showNotification('Gagal memuat data dari Spreadsheet.');
+                            return;
+                        }
+
+                        // Simpan status pilihan (checkbox) sebelumnya agar tidak hilang saat auto-sync
+                        const oldSelected = {};
+                        if (globalAppData && globalAppData.recipients) {
+                            globalAppData.recipients.forEach(r => {
+                                if (r._selected && r.email) {
+                                    oldSelected[r.email] = true;
+                                }
+                            });
+                        }
+
+                        // Secara bawaan tidak dicentang & tetapkan identitas original (index)
+                        data.recipients.forEach((r, idx) => {
+                            r._selected = !!oldSelected[r.email]; // kembalikan status centang jika ada
+                            r._index = idx; // Index asli data globalAppData.recipients
+                        });
+                        
+                        globalAppData = data;
+                        if (data.userEmail) {
+                            const userLbl = document.getElementById('active-user-label');
+                            const userAvt = document.getElementById('active-user-avatar');
+                            if (userLbl) userLbl.innerText = data.userEmail;
+                            if (userAvt) userAvt.innerText = data.userEmail.charAt(0).toUpperCase();
+                        }
+                        renderApp(silent); // render tanpa me-reset pagination/input jika silent
+                        if (!silent) showNotification('Data berhasil disinkronkan!');
+                    })
+                    .withFailureHandler(err => {
+                        showNotification('Gagal menyinkronkan data: ' + (err && err.message ? err.message : err));
+                    })
+                    .getAppData();
+            } else {
+                if (!silent) showNotification('Menjalankan di luar Google Script (Data kosong)');
+            }
+        }
+
+        function renderApp(preserveState = false) {
+            renderDashboardStats();
+            renderMasterLists();
+            renderTemplateList();
+            
+            // Jangan timpa input teks jika sedang auto-sync (preserveState = true)
+            if (!preserveState) {
+                const tplList = globalAppData.templateList || [];
+                const targetTpl = (currentEditingTemplateId && tplList.find(t => t.id === currentEditingTemplateId))
+                    || (globalAppData.template && globalAppData.template.id ? globalAppData.template : null)
+                    || tplList[0];
+
+                if (targetTpl && targetTpl.id) {
+                    loadTemplateIntoEditor(targetTpl.id, false);
+                } else {
+                    resetTemplateEditor();
+                }
+                
+                document.getElementById('select-all').checked = false;
+                currentPage = 1; 
+            }
+            updateTable(); 
+        }
+
+       function renderDashboardStats() {
+            const total = globalAppData.recipients.length;
+            const sent = globalAppData.recipients.filter(r => r.status === 'Terkirim').length;
+            const pending = total - sent;
+            
+            document.getElementById('stat-total').innerText = total;
+            document.getElementById('stat-sent').innerText = sent;
+            document.getElementById('stat-pending').innerText = pending;
+            
+            // Logika baru: Menghitung email yang SUDAH DIKIRIM khusus HARI INI
+            const maxQuota = 1000; 
+            const todayDate = new Date();
+            
+            const sentToday = globalAppData.recipients.filter(r => {
+                if (r.status !== 'Terkirim' || !r.sentTime || r.sentTime === '-') return false;
+                
+                // Format sentTime dari backend adalah "dd MMM yyyy, HH:mm 'WIB'"
+                // Kita pisahkan koma untuk mengambil bagian tanggalnya saja (dd MMM yyyy)
+                const datePart = String(r.sentTime).split(',')[0]; 
+                const d = new Date(datePart);
+                
+                // Cocokkan apakah tanggal pengiriman sama dengan tanggal hari ini
+                return !isNaN(d) && 
+                       d.getDate() === todayDate.getDate() && 
+                       d.getMonth() === todayDate.getMonth() && 
+                       d.getFullYear() === todayDate.getFullYear();
+            }).length;
+            
+            // Hitung persentase terpakai
+            const usedPercent = Math.min(Math.round((sentToday / maxQuota) * 100), 100);
+
+            // Update angka teks (Telah Dikirim Hari Ini / Maksimal 1000)
+            document.getElementById('stat-quota').innerText = sentToday + ' / ' + maxQuota;
+            document.getElementById('quota-display').innerText = sentToday + ' / ' + maxQuota;
+            
+            // Update Bilah Kemajuan (Progress Bar) & Label Persentase
+            const quotaBar = document.getElementById('stat-quota-bar');
+            const quotaText = document.getElementById('stat-quota-percent');
+            
+            if(quotaBar) {
+                quotaBar.style.width = usedPercent + '%';
+                // Warna dibalik: Menjadi merah jika penggunaan hari ini sudah sangat tinggi (> 80%)
+                if (usedPercent > 80) {
+                    quotaBar.className = "bg-rose-500 h-full transition-all duration-1000 ease-out";
+                    quotaText.className = "text-rose-600";
+                } else if (usedPercent > 50) {
+                    quotaBar.className = "bg-amber-500 h-full transition-all duration-1000 ease-out";
+                    quotaText.className = "text-amber-600";
+                } else {
+                    quotaBar.className = "bg-indigo-500 h-full transition-all duration-1000 ease-out";
+                    quotaText.className = "text-indigo-600";
+                }
+            }
+            if(quotaText) quotaText.innerText = usedPercent + '% Terpakai';
+        }
+
+        function switchTab(tabId) {
+            ['dashboard', 'master', 'template'].forEach(t => {
+                const viewEl = document.getElementById('view-' + t);
+                const navEl = document.getElementById('nav-' + t);
+                if(viewEl) viewEl.classList.add('hidden');
+                if(navEl) navEl.className = "flex items-center px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-800 text-slate-300 transition-colors";
+            });
+            document.getElementById('view-' + tabId).classList.remove('hidden');
+            document.getElementById('nav-' + tabId).className = "flex items-center px-3 py-2.5 rounded-lg text-sm font-medium bg-indigo-600 text-white transition-colors";
+
+            const titles = {
+                'dashboard': 'Dasbor',
+                'master': 'Manajemen Data',
+                'template': 'Templat Surel'
+            };
+            document.getElementById('page-title').innerText = titles[tabId];
+        }
+
+        function renderMasterLists() {
+            const kSelect = document.getElementById('input-kegiatan');
+            if(kSelect) kSelect.innerHTML = globalAppData.kegiatanList.map(k => `<option value="${k.code}">${k.name}</option>`).join('');
+            const mSelect = document.getElementById('input-mapel');
+            if(mSelect) mSelect.innerHTML = globalAppData.mapelList.map(m => `<option value="${m.code}">${m.name}</option>`).join('');
+
+            const kFilter = document.getElementById('kegiatan-filter');
+            if(kFilter) {
+                const prevKegiatan = kFilter.value;
+                kFilter.innerHTML = `<option value="">Semua Kegiatan</option>` +
+                    globalAppData.kegiatanList.map(k => `<option value="${escapeHtml(k.code)}">${escapeHtml(k.name)}</option>`).join('');
+                if (prevKegiatan && globalAppData.kegiatanList.some(k => k.code === prevKegiatan)) {
+                    kFilter.value = prevKegiatan;
+                }
+            }
+
+            document.getElementById('list-mapel').innerHTML = globalAppData.mapelList.map(m => `
+                <div class="flex justify-between items-center p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm">
+                    <span class="font-medium text-slate-700">${m.name}</span>
+                    <div class="space-x-1">
+                        <button onclick="openMasterModal('mapel', 'edit', '${m.code}', '${m.name}')" class="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-md text-xs"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="deleteMasterItem('mapel', '${m.code}')" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-md text-xs"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('list-kegiatan').innerHTML = globalAppData.kegiatanList.map(k => `
+                <div class="flex justify-between items-center p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm">
+                    <span class="font-medium text-slate-700">${k.name}</span>
+                    <div class="space-x-1">
+                        <button onclick="openMasterModal('kegiatan', 'edit', '${k.code}', '${k.name}')" class="p-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-md text-xs"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="deleteMasterItem('kegiatan', '${k.code}')" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-md text-xs"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ================= PAGINATION & FILTER LOGIC =================
+        function updateTable() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const status = document.getElementById('status-filter').value;
+            const kegiatanFilter = document.getElementById('kegiatan-filter') ? document.getElementById('kegiatan-filter').value : '';
+            
+            filteredRecipients = globalAppData.recipients.filter(r => {
+                const text = `${r.no} ${r.kegiatan} ${r.mapel} ${r.penulis} ${r.instansi} ${r.email}`.toLowerCase();
+                const matchQuery = text.includes(query);
+                const statusLower = String(r.status || 'Belum').toLowerCase();
+                const normalizedStatus = statusLower === 'belum' ? 'draft' : statusLower;
+                const matchStatus = !status || normalizedStatus === status.toLowerCase();
+                const matchKegiatan = !kegiatanFilter || r.kegiatanCode === kegiatanFilter || r.kegiatan === kegiatanFilter;
+                return matchQuery && matchStatus && matchKegiatan;
+            });
+            
+            const totalItems = filteredRecipients.length;
+            const totalPages = Math.ceil(totalItems / rowsPerPage) || 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+            
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const paginated = filteredRecipients.slice(startIndex, startIndex + rowsPerPage);
+            
+            const tbody = document.getElementById('recipient-tbody');
+            if(tbody) {
+                // Tambahkan argumen 'index' pada .map()
+                tbody.innerHTML = paginated.map((r, index) => {
+                    const originalIndex = r._index; 
+                    
+                    // NOMOR DINAMIS: Reset dari 1 mengikuti urutan baris yang tampil
+                    const displayNo = startIndex + index + 1;
+                    
+                    // Handler Cerdas untuk Tautan (Mendukung Teks Biasa tanpa HTTPS)
+                    const renderLinkField = (value, tooltip) => {
+                        if(!value) return `<span class="text-slate-300">-</span>`;
+                        const hasProtocol = value.toLowerCase().startsWith('http');
+                        const isUrl = hasProtocol || value.includes('.'); // Cek titik koma dasar url
+                        if (isUrl && !value.includes(' ')) {
+                            const href = hasProtocol ? value : 'https://' + value;
+                            return `<a href="${href}" target="_blank" class="inline-flex items-center justify-center w-7 h-7 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded" title="${tooltip}"><i class="fa-solid fa-external-link-alt text-[11px]"></i></a>`;
+                        }
+                        // Jika berisi teks penjelasan panjang
+                        return `<div class="cursor-help inline-flex items-center justify-center w-7 h-7 bg-slate-100 text-slate-600 rounded" title="Teks Informasi: ${value}"><i class="fa-solid fa-align-left text-[11px]"></i></div>`;
+                    };
+
+                    return `
+                    <tr class="hover:bg-slate-50 transition border-b border-slate-100 last:border-b-0">
+                        <td class="px-2 py-3 text-center align-top"><input type="checkbox" ${r._selected ? 'checked' : ''} onchange="toggleSelection(${originalIndex}, this.checked)" class="row-checkbox rounded text-indigo-600 focus:ring-indigo-500 mt-1"></td>
+                        <td class="px-2 py-3 font-medium text-slate-500 text-center align-top">${displayNo}</td>
+                        <td class="px-2 py-3 align-top">
+                            <div class="font-semibold text-slate-700 line-clamp-2 break-words leading-tight" title="${r.kegiatan}">${r.kegiatan}</div>
+                        </td>
+                        <td class="px-2 py-3 align-top">
+                            <div class="text-slate-600 line-clamp-2 break-words leading-tight" title="${r.mapel}">${r.mapel}</div>
+                        </td>
+                        <td class="px-2 py-3 align-top">
+                            <div class="font-semibold text-slate-800 line-clamp-1 break-words leading-tight" title="${r.penulis}">${r.penulis}</div>
+                            <div class="text-[10px] font-medium text-indigo-600 line-clamp-1 break-words leading-tight mt-0.5" title="${r.instansi}">${r.instansi}</div>
+                        </td>
+                        <td class="px-2 py-3 align-top">
+                            <div class="text-slate-700 font-medium line-clamp-2 break-words leading-tight" title="${r.email}">${r.email}</div>
+                        </td>
+                        <td class="px-2 py-3 text-center align-top">${renderLinkField(r.download, 'Buka Unduhan')}</td>
+                        <td class="px-2 py-3 text-center align-top">${renderLinkField(r.upload, 'Buka Unggahan')}</td>
+                        <td class="px-2 py-3 text-center align-top">
+                            <span class="${r.status === 'Terkirim' ? 'bg-emerald-100 text-emerald-700' : r.status === 'Proses' ? 'bg-indigo-100 text-indigo-700' : r.status === 'Gagal' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'} text-[10px] px-2 py-0.5 rounded-full font-semibold inline-block">${r.status === 'Belum' ? 'Draft' : r.status}</span>
+                        </td>
+                        <td class="px-2 py-3 text-center align-top space-x-0.5 whitespace-nowrap">
+                            <button onclick="openPreviewModalSingle('${r.email}')" class="w-7 h-7 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded" title="Pratinjau"><i class="fa-solid fa-eye text-[11px]"></i></button>
+                            <button onclick="openEditRowModal(${originalIndex})" class="w-7 h-7 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded" title="Edit"><i class="fa-solid fa-pen text-[11px]"></i></button>
+                            <button onclick="openInfoModal(${originalIndex})" class="w-7 h-7 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded" title="Info"><i class="fa-solid fa-circle-info text-[11px]"></i></button>
+                            <button onclick="deleteRecipientRow(${originalIndex})" class="w-7 h-7 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded" title="Hapus"><i class="fa-solid fa-trash text-[11px]"></i></button>
+                        </td>
+                    </tr>
+                    `;
+                }).join('');
+            }
+            
+            // UPDATE TEKS INFORMASI DATA RANGE (Misal: Menampilkan 1-10 dari 50)
+            const endDisplay = Math.min(startIndex + rowsPerPage, totalItems);
+            const startDisplay = totalItems > 0 ? startIndex + 1 : 0;
+            const rangeInfoEl = document.getElementById('data-range-info');
+            if (rangeInfoEl) {
+                rangeInfoEl.innerText = `Menampilkan ${startDisplay}-${endDisplay} dari ${totalItems} data`;
+            }
+            
+            document.getElementById('page-info').innerText = `Halaman ${currentPage} dari ${totalPages}`;
+            document.getElementById('btn-prev-page').disabled = currentPage === 1;
+            document.getElementById('btn-next-page').disabled = currentPage === totalPages || totalPages === 0;
+
+            const allSelectedOnPage = paginated.length > 0 && paginated.every(r => r._selected);
+            document.getElementById('select-all').checked = allSelectedOnPage;
+
+            updateCheckedCount();
+        }
+
+        function changePage(dir) {
+            currentPage += dir;
+            updateTable();
+        }
+
+        function changeRowsPerPage(val) {
+            rowsPerPage = parseInt(val);
+            currentPage = 1;
+            updateTable();
+        }
+
+        function toggleSelection(index, isChecked) {
+            const item = globalAppData.recipients[index]; // Cari langsung via Index
+            if(item) item._selected = isChecked;
+            
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const paginated = filteredRecipients.slice(startIndex, startIndex + rowsPerPage);
+            document.getElementById('select-all').checked = paginated.every(r => r._selected);
+            
+            updateCheckedCount();
+        }
+
+        function toggleAllCheckboxes(master) {
+            const isChecked = master.checked;
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const paginated = filteredRecipients.slice(startIndex, startIndex + rowsPerPage);
+            
+            paginated.forEach(r => { r._selected = isChecked; });
+            updateTable(); 
+        }
+
+        function updateCheckedCount() {
+            const count = globalAppData.recipients.filter(r => r._selected).length;
+            const countEl = document.getElementById('checked-count');
+            const delEl = document.getElementById('delete-count');
+            if(countEl) countEl.innerText = count;
+            if(delEl) delEl.innerText = count;
+        }
+
+        // ================= EXCEL EXPORT & IMPORT (SHEETJS) =================
+        function exportRecipientsExcel() {
+            if(!window.XLSX) { showNotification("Library Excel belum dimuat!"); return; }
+            
+            const dataToExport = globalAppData.recipients.map(r => ({
+                'No.': r.no,
+                'Kode Kegiatan': r.kegiatanCode,
+                'Nama Kegiatan': r.kegiatan,
+                'Kode Mapel': r.mapelCode,
+                'Mata Pelajaran': r.mapel,
+                'Nama Penulis': r.penulis,
+                'Instansi': r.instansi,
+                'Surel': r.email,
+                'Link Unduh': r.download,
+                'Link Unggah': r.upload,
+                'Status': r.status,
+                'Waktu Kirim': r.sentTime,
+                'Waktu Upload': r.uploadTime
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(dataToExport);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Data Penerima");
+
+            const mapelToExport = (globalAppData.mapelList || []).map(m => ({
+                'Kode': m.code,
+                'Mata Pelajaran': m.name
+            }));
+            const wsMapel = XLSX.utils.json_to_sheet(mapelToExport, { header: ['Kode', 'Mata Pelajaran'] });
+            XLSX.utils.book_append_sheet(wb, wsMapel, "Kode Mapel");
+
+            const kegiatanToExport = (globalAppData.kegiatanList || []).map(k => ({
+                'Kode': k.code,
+                'Kegiatan': k.name
+            }));
+            const wsKgt = XLSX.utils.json_to_sheet(kegiatanToExport, { header: ['Kode', 'Kegiatan'] });
+            XLSX.utils.book_append_sheet(wb, wsKgt, "Kode Kegiatan");
+
+            XLSX.writeFile(wb, "Data_Penerima_MailBlast.xlsx");
+            showNotification('Data penerima berhasil diekspor!');
+        }
+
+        function downloadRecipientsTemplate() {
+            if(!window.XLSX) { showNotification("Library Excel belum dimuat!"); return; }
+
+            const templateData = [{
+                'Kode Kegiatan': globalAppData.kegiatanList.length > 0 ? globalAppData.kegiatanList[0].code : 'KGT-01',
+                'Kode Mapel': globalAppData.mapelList.length > 0 ? globalAppData.mapelList[0].code : 'MPL-01',
+                'Nama Penulis': 'Contoh Nama',
+                'Surel': 'email@contoh.com',
+                'Instansi': 'Instansi Contoh',
+                'Link Drive': 'https://drive.google.com/ / Dokumen Terlampir',
+                'GForm': 'https://forms.gle/ / Dokumen Fisik'
+            }];
+
+            const ws = XLSX.utils.json_to_sheet(templateData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Template Impor");
+            
+            const wsMapel = XLSX.utils.json_to_sheet(globalAppData.mapelList.map(m => ({'Kode': m.code, 'Mata Pelajaran': m.name})));
+            XLSX.utils.book_append_sheet(wb, wsMapel, "Referensi Mapel");
+
+            const wsKgt = XLSX.utils.json_to_sheet(globalAppData.kegiatanList.map(k => ({'Kode': k.code, 'Kegiatan': k.name})));
+            XLSX.utils.book_append_sheet(wb, wsKgt, "Referensi Kegiatan");
+
+            XLSX.writeFile(wb, "Template_Impor_Penerima.xlsx");
+            showNotification('Templat berhasil diunduh!');
+        }
+
+        function handleRecipientExcelUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            showNotification('Membaca file Excel...');
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                
+                const parsedData = jsonData.map(row => ({
+                    kegiatanCode: row['Kode Kegiatan'] || 'KGT-01',
+                    mapelCode: row['Kode Mapel'] || 'MPL-01',
+                    penulis: row['Nama Penulis'] || '-',
+                    email: row['Surel'] || '',
+                    instansi: row['Instansi'] || '-',
+                    download: row['Link Drive'] || '',
+                    upload: row['GForm'] || ''
+                })).filter(item => item.email !== '');
+
+                if(parsedData.length === 0) {
+                    showNotification('Tidak ada data surel yang valid ditemukan!');
+                    return;
+                }
+
+                showNotification(`Mengimpor ${parsedData.length} baris ke server...`);
+                if (typeof google !== 'undefined' && google.script && google.script.run) {
+                    google.script.run
+                        .withSuccessHandler(res => {
+                            showNotification('Impor berhasil diselesaikan!');
+                            loadAppData();
+                        })
+                        .importMultipleRecipients(parsedData);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+            input.value = '';
+        }
+
+        function downloadMasterTemplate() {
+            if(!window.XLSX) { showNotification("Library Excel belum dimuat!"); return; }
+            const mapelData = [{ 'Nama Mapel': 'Contoh: Matematika Terapan' }, { 'Nama Mapel': 'Contoh: Kimia Analitik' }];
+            const kegiatanData = [{ 'Nama Kegiatan': 'Contoh: Workshop Evaluasi' }, { 'Nama Kegiatan': 'Contoh: Penyusunan Silabus' }];
+            
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(mapelData), "Impor Mapel");
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(kegiatanData), "Impor Kegiatan");
+            XLSX.writeFile(wb, "Template_Impor_Master.xlsx");
+            showNotification('Templat master berhasil diunduh!');
+        }
+
+        function handleBulkExcelUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            showNotification('Membaca file Excel Master...');
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                let importedAny = false;
+                
+                if (workbook.SheetNames.includes('Impor Mapel')) {
+                    const mapelSheet = workbook.Sheets['Impor Mapel'];
+                    const mapelJson = XLSX.utils.sheet_to_json(mapelSheet);
+                    const mapelParsed = mapelJson.map(r => ({ name: r['Nama Mapel'] })).filter(m => m.name && !m.name.includes('Contoh:'));
+                    if (mapelParsed.length > 0 && typeof google !== 'undefined') {
+                        google.script.run.importMasterData('mapel', mapelParsed);
+                        importedAny = true;
+                    }
+                }
+                
+                if (workbook.SheetNames.includes('Impor Kegiatan')) {
+                    const kegSheet = workbook.Sheets['Impor Kegiatan'];
+                    const kegJson = XLSX.utils.sheet_to_json(kegSheet);
+                    const kegParsed = kegJson.map(r => ({ name: r['Nama Kegiatan'] })).filter(m => m.name && !m.name.includes('Contoh:'));
+                    if (kegParsed.length > 0 && typeof google !== 'undefined') {
+                        google.script.run.importMasterData('kegiatan', kegParsed);
+                        importedAny = true;
+                    }
+                }
+                
+                if (importedAny) {
+                    showNotification('Memproses impor data master...');
+                    setTimeout(() => loadAppData(), 2500); 
+                } else {
+                    showNotification('Format tidak dikenali / Harap hapus contoh baris pertama ("Impor Mapel" atau "Impor Kegiatan")');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+            input.value = '';
+        }
+
+        // ================= CRUD PENERIMA =================
+        function openAddRowModal() {
+            document.getElementById('row-modal-title').innerHTML = `<i class="fa-solid fa-plus text-emerald-600 mr-2"></i> Tambah Data Penerima`;
+            document.getElementById('input-row-index').value = '-1';
+            document.getElementById('input-penulis').value = '';
+            document.getElementById('input-instansi').value = '';
+            document.getElementById('input-email').value = '';
+            document.getElementById('input-download').value = '';
+            document.getElementById('input-upload').value = '';
+            document.getElementById('input-status').value = 'Draft';
+            document.getElementById('row-modal').classList.remove('hidden');
+            document.getElementById('row-modal').classList.add('flex');
+        }
+
+        function openEditRowModal(idx) {
+            const r = globalAppData.recipients[idx];
+            document.getElementById('row-modal-title').innerHTML = `<i class="fa-solid fa-pen text-amber-600 mr-2"></i> Edit Data Penerima #${r.no}`;
+            document.getElementById('input-row-index').value = idx;
+            document.getElementById('input-kegiatan').value = r.kegiatanCode || globalAppData.kegiatanList[0]?.code;
+            document.getElementById('input-mapel').value = r.mapelCode || globalAppData.mapelList[0]?.code;
+            document.getElementById('input-penulis').value = r.penulis;
+            document.getElementById('input-instansi').value = r.instansi;
+            document.getElementById('input-email').value = r.email;
+            document.getElementById('input-download').value = r.download;
+            document.getElementById('input-upload').value = r.upload;
+            document.getElementById('input-status').value = r.status === 'Belum' ? 'Draft' : (r.status || 'Draft');
+            document.getElementById('row-modal').classList.remove('hidden');
+            document.getElementById('row-modal').classList.add('flex');
+        }
+
+        function closeRowModal() {
+            document.getElementById('row-modal').classList.add('hidden');
+            document.getElementById('row-modal').classList.remove('flex');
+        }
+
+        function saveRowData() {
+            const idx = parseInt(document.getElementById('input-row-index').value);
+            const kCode = document.getElementById('input-kegiatan').value;
+            const mCode = document.getElementById('input-mapel').value;
+            const payload = {
+                sheetRow: idx > -1 ? globalAppData.recipients[idx].sheetRow : null,
+                kegiatanCode: kCode,
+                mapelCode: mCode,
+                kegiatan: globalAppData.kegiatanList.find(k => k.code === kCode)?.name || kCode,
+                mapel: globalAppData.mapelList.find(m => m.code === mCode)?.name || mCode,
+                penulis: document.getElementById('input-penulis').value,
+                email: document.getElementById('input-email').value,
+                instansi: document.getElementById('input-instansi').value,
+                download: document.getElementById('input-download').value,
+                upload: document.getElementById('input-upload').value,
+                status: document.getElementById('input-status').value,
+                sentTime: idx > -1 ? globalAppData.recipients[idx].sentTime : '-',
+                uploadTime: idx > -1 ? globalAppData.recipients[idx].uploadTime : '-'
+            };
+
+            if(!payload.email || !payload.penulis) {
+                showNotification('Mohon lengkapi Nama Penulis dan Surel Penerima!');
+                return;
+            }
+
+            closeRowModal();
+            showNotification('Menyimpan data ke server...');
+
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler(res => {
+                        showNotification('Data penerima berhasil disimpan ke Spreadsheet!');
+                        loadAppData();
+                    })
+                    .saveRecipientRow(payload);
+            }
+        }
+
+        function deleteRecipientRow(idx) {
+            showConfirm('Hapus Data Penerima', 'Apakah Anda yakin ingin menghapus penerima ini?', () => {
+                const sheetRow = globalAppData.recipients[idx].sheetRow;
+                showNotification('Menghapus data...');
+                
+                if (typeof google !== 'undefined' && google.script && google.script.run) {
+                    google.script.run
+                        .withSuccessHandler(res => {
+                            showNotification('Data penerima berhasil dihapus!');
+                            loadAppData();
+                        })
+                        .deleteRecipientRow(sheetRow);
+                }
+            });
+        }
+
+        function deleteSelectedRecipients() {
+            const selected = globalAppData.recipients.filter(r => r._selected);
+            if(selected.length === 0) { showNotification('Pilih minimal satu data untuk dihapus!'); return; }
+            
+            showConfirm('Hapus Massal Terpilih', `Apakah Anda yakin ingin menghapus ${selected.length} data terpilih?`, () => {
+                showNotification('Menghapus data massal...');
+                // Gunakan index sheet row, bukan email
+                const rowsToDelete = selected.map(r => r.sheetRow);
+
+                if (typeof google !== 'undefined' && google.script && google.script.run) {
+                    google.script.run
+                        .withSuccessHandler(res => {
+                            showNotification(`${selected.length} data berhasil dihapus!`);
+                            loadAppData();
+                        })
+                        .deleteMultipleRecipients(rowsToDelete);
+                }
+            });
+        }
+
+        // ================= MODAL INFO LOG =================
+        function openInfoModal(idx) {
+            const r = globalAppData.recipients[idx];
+            
+            // Fungsi pembantu untuk membuat tautan dapat diklik di dalam modal info
+            const renderInfoLink = (val) => {
+                if(!val || val === '-') return '-';
+                const hasProtocol = val.toLowerCase().startsWith('http');
+                const isUrl = hasProtocol || (!val.includes(' ') && val.includes('.'));
+                if (isUrl) {
+                    const href = hasProtocol ? val : 'https://' + val;
+                    return `<a href="${href}" target="_blank" class="text-indigo-600 hover:underline"><i class="fa-solid fa-external-link-alt mr-1"></i>Buka Tautan</a>`;
+                }
+                return val; // Jika hanya teks biasa, tampilkan teksnya
+            };
+            
+            document.getElementById('info-content-body').innerHTML = `
+                <div class="space-y-2 text-xs">
+                    <div class="flex justify-between border-b pb-1 gap-4"><span class="text-slate-500 font-semibold whitespace-nowrap">No. Urut:</span> <span class="font-bold text-slate-800 text-right">${r.no}</span></div>
+                    <div class="flex justify-between border-b pb-1 gap-4"><span class="text-slate-500 font-semibold whitespace-nowrap">Kegiatan:</span> <span class="font-bold text-slate-800 text-right break-words max-w-[65%]">${r.kegiatan}</span></div>
+                    <div class="flex justify-between border-b pb-1 gap-4"><span class="text-slate-500 font-semibold whitespace-nowrap">Mata Pelajaran:</span> <span class="font-bold text-slate-800 text-right break-words max-w-[65%]">${r.mapel}</span></div>
+                    <div class="flex justify-between border-b pb-1 gap-4"><span class="text-slate-500 font-semibold whitespace-nowrap">Nama Penulis:</span> <span class="font-bold text-slate-800 text-right break-words max-w-[65%]">${r.penulis}</span></div>
+                    <div class="flex justify-between border-b pb-1 gap-4"><span class="text-slate-500 font-semibold whitespace-nowrap">Instansi:</span> <span class="font-bold text-indigo-600 text-right break-words max-w-[65%]">${r.instansi}</span></div>
+                    <div class="flex justify-between border-b pb-1 gap-4"><span class="text-slate-500 font-semibold whitespace-nowrap">Surel:</span> <span class="font-bold text-slate-800 text-right break-all max-w-[65%]">${r.email}</span></div>
+                    <div class="flex justify-between border-b pb-1 gap-4"><span class="text-slate-500 font-semibold whitespace-nowrap">Tautan Unduh:</span> <span class="font-bold text-slate-800 text-right break-words max-w-[65%]">${renderInfoLink(r.download)}</span></div>
+                    <div class="flex justify-between border-b pb-1 gap-4"><span class="text-slate-500 font-semibold whitespace-nowrap">Tautan Unggah:</span> <span class="font-bold text-slate-800 text-right break-words max-w-[65%]">${renderInfoLink(r.upload)}</span></div>
+                    <div class="flex justify-between border-b pb-1 gap-4"><span class="text-slate-500 font-semibold whitespace-nowrap">Status Kirim:</span> <span class="font-bold text-slate-800 text-right">${r.status}</span></div>
+                    <div class="flex justify-between border-b pb-1 bg-emerald-50 p-1.5 rounded gap-4"><span class="text-emerald-900 font-semibold whitespace-nowrap">Waktu Unggah:</span> <span class="font-bold text-emerald-700 text-right">${r.uploadTime || '-'}</span></div>
+                    <div class="flex justify-between border-b pb-1 bg-indigo-50 p-1.5 rounded gap-4"><span class="text-indigo-900 font-semibold whitespace-nowrap">Waktu Kirim:</span> <span class="font-bold text-indigo-700 text-right">${r.sentTime || '-'}</span></div>
+
+                    <div class="flex justify-between border-b pb-1 bg-amber-50 p-1.5 rounded gap-4"><span class="text-amber-900 font-semibold whitespace-nowrap">Waktu Terakhir Edit:</span> <span class="font-bold text-amber-700 text-right">${r.editTime || '-'}</span></div>
+                </div>
+            `;
+            document.getElementById('info-modal').classList.remove('hidden');
+            document.getElementById('info-modal').classList.add('flex');
+        }
+        function closeInfoModal() {
+            document.getElementById('info-modal').classList.add('hidden');
+            document.getElementById('info-modal').classList.remove('flex');
+            }
+
+        // ================= CRUD MASTER =================
+        function openMasterModal(type, mode, code='', name='') {
+            document.getElementById('master-type').value = type;
+            document.getElementById('master-code').value = code;
+            document.getElementById('master-label-name').innerText = `Nama ${type === 'mapel' ? 'Mata Pelajaran' : 'Kegiatan'}`;
+            document.getElementById('master-input-name').value = mode === 'add' ? '' : name;
+            document.getElementById('master-modal').classList.remove('hidden');
+            document.getElementById('master-modal').classList.add('flex');
+        }
+        function closeMasterModal() {
+            document.getElementById('master-modal').classList.add('hidden');
+            document.getElementById('master-modal').classList.remove('flex');
+        }
+
+        function saveMasterItemModal() {
+            const type = document.getElementById('master-type').value;
+            const code = document.getElementById('master-code').value;
+            const name = document.getElementById('master-input-name').value.trim();
+
+            if(!name) { showNotification('Nama master tidak boleh kosong!'); return; }
+            closeMasterModal();
+            showNotification('Menyimpan master ke server...');
+
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler(res => {
+                        showNotification(`Master ${type} berhasil disimpan!`);
+                        loadAppData();
+                    })
+                    .saveMasterItem(type, code, name);
+            }
+        }
+
+        function deleteMasterItem(type, code) {
+            showConfirm('Hapus Data Master', `Apakah Anda yakin ingin menghapus data master ini?`, () => {
+                showNotification('Menghapus master...');
+                if (typeof google !== 'undefined' && google.script && google.script.run) {
+                    google.script.run
+                        .withSuccessHandler(res => {
+                            showNotification(`Master ${type} berhasil dihapus!`);
+                            loadAppData();
+                        })
+                        .deleteMasterItemByCode(type, code);
+                }
+            });
+        }
+
+        // ================= TEMPLATE EDITOR & LIST =================
+        function insertVar(variable) { document.execCommand('insertText', false, variable); }
+        function formatText(command) { document.execCommand(command, false, null); }
+        
+        // Fungsi Tambahan untuk menyisipkan Kotak Informasi (Box)
+        function insertBox() {
+            const htmlBox = `<div style="padding: 12px; border: 1px solid #cbd5e1; background-color: #f8fafc; border-radius: 6px; margin: 10px 0;"><p style="margin:0; font-family:sans-serif; font-size:14px; color:#334155;"><em>Isi teks kotak di sini...</em></p></div><br>`;
+            document.execCommand('insertHTML', false, htmlBox);
+        }
+
+        function escapeHtml(str) {
+            return String(str || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function getActiveTemplate() {
+            const list = globalAppData.templateList || [];
+            const foundActive = list.find(t => t.active);
+            if (foundActive) return foundActive;
+            if (globalAppData.template && (globalAppData.template.subject || globalAppData.template.body)) {
+                return globalAppData.template;
+            }
+            return list[0] || null;
+        }
+
+        function renderTemplateList() {
+            const listEl = document.getElementById('list-templates');
+            const activeNameEl = document.getElementById('active-template-name');
+            if (!listEl) return;
+
+            const tplList = globalAppData.templateList || [];
+            const activeTpl = getActiveTemplate();
+
+            if (activeNameEl) {
+                activeNameEl.innerText = activeTpl && activeTpl.name ? activeTpl.name : 'Belum ada templat dipilih';
+            }
+
+            if (tplList.length === 0) {
+                listEl.innerHTML = `
+                    <div class="text-center py-8 px-4 border border-dashed border-slate-200 rounded-xl text-slate-400 text-xs space-y-1">
+                        <i class="fa-regular fa-folder-open text-2xl mb-1 block"></i>
+                        <p class="font-semibold text-slate-600">Belum Ada Templat</p>
+                        <p>Isi form di sebelah kanan lalu klik <b>Simpan Templat</b> untuk membuat templat baru.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            listEl.innerHTML = tplList.map(t => {
+                const isActive = !!t.active;
+                const isEditing = currentEditingTemplateId === t.id;
+                const cardClass = isActive
+                    ? 'border-emerald-400 bg-emerald-50/40 ring-1 ring-emerald-400/50'
+                    : isEditing
+                        ? 'border-indigo-300 bg-indigo-50/30'
+                        : 'border-slate-200 bg-slate-50/70 hover:bg-slate-100/80';
+
+                return `
+                    <div class="p-3 rounded-xl border transition ${cardClass} flex flex-col gap-2">
+                        <div class="flex justify-between items-start gap-2">
+                            <div class="min-w-0 flex-1 cursor-pointer" onclick="loadTemplateIntoEditor('${escapeHtml(t.id)}')">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <h4 class="font-bold text-slate-800 text-xs truncate">${escapeHtml(t.name)}</h4>
+                                    ${isEditing ? `<span class="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded font-semibold">Sedang Diedit</span>` : ''}
+                                </div>
+                                <p class="text-[11px] text-slate-600 truncate mt-0.5" title="${escapeHtml(t.subject)}">Subjek: <span class="font-medium">${escapeHtml(t.subject || '-')}</span></p>
+                                <p class="text-[10px] text-slate-400 truncate">Pengirim: ${escapeHtml(t.sender || '-')}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between pt-2 border-t border-slate-200/70 gap-2">
+                            <div>
+                                ${isActive
+                                    ? `<span class="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-[11px] px-2.5 py-1 rounded-lg font-bold"><i class="fa-solid fa-circle-check text-emerald-600"></i> Digunakan</span>`
+                                    : `<button onclick="selectTemplateToUse('${escapeHtml(t.id)}')" class="inline-flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] px-2.5 py-1 rounded-lg font-semibold transition shadow-sm"><i class="fa-solid fa-check"></i> Pilih / Gunakan</button>`
+                                }
+                            </div>
+                            <div class="flex items-center space-x-1">
+                                <button onclick="loadTemplateIntoEditor('${escapeHtml(t.id)}')" class="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-md text-xs font-medium flex items-center gap-1" title="Edit Templat"><i class="fa-solid fa-pen text-[10px]"></i> <span>Edit</span></button>
+                                <button onclick="deleteTemplateItem('${escapeHtml(t.id)}')" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-md text-xs" title="Hapus Templat"><i class="fa-solid fa-trash text-[11px]"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function loadTemplateIntoEditor(id, notify = true) {
+            const tplList = globalAppData.templateList || [];
+            const tpl = tplList.find(t => t.id === id);
+            if (!tpl) return;
+
+            currentEditingTemplateId = tpl.id;
+            document.getElementById('tpl-id').value = tpl.id;
+            document.getElementById('tpl-name').value = tpl.name || '';
+            document.getElementById('tpl-subject').value = tpl.subject || '';
+            document.getElementById('tpl-sender').value = tpl.sender || '';
+            document.getElementById('tpl-editor').innerHTML = tpl.body || '';
+
+            const badge = document.getElementById('tpl-mode-badge');
+            if (badge) {
+                badge.innerText = `Mengedit: ${tpl.name}`;
+                badge.className = 'bg-amber-50 text-amber-700 border border-amber-200 text-[11px] px-2.5 py-0.5 rounded-full font-semibold';
+            }
+            const saveBtnText = document.getElementById('btn-save-tpl-text');
+            if (saveBtnText) saveBtnText.innerText = 'Simpan Perubahan';
+
+            renderTemplateList();
+            if (notify) showNotification(`Memuat templat "${tpl.name}" ke editor.`);
+        }
+
+        function resetTemplateEditor() {
+            currentEditingTemplateId = '';
+            document.getElementById('tpl-id').value = '';
+            document.getElementById('tpl-name').value = '';
+            document.getElementById('tpl-subject').value = '';
+            document.getElementById('tpl-sender').value = '';
+            document.getElementById('tpl-editor').innerHTML = '';
+
+            const badge = document.getElementById('tpl-mode-badge');
+            if (badge) {
+                badge.innerText = 'Buat Templat Baru';
+                badge.className = 'bg-indigo-50 text-indigo-700 border border-indigo-200 text-[11px] px-2.5 py-0.5 rounded-full font-semibold';
+            }
+            const saveBtnText = document.getElementById('btn-save-tpl-text');
+            if (saveBtnText) saveBtnText.innerText = 'Simpan Templat Baru';
+
+            renderTemplateList();
+            const nameInput = document.getElementById('tpl-name');
+            if (nameInput) nameInput.focus();
+        }
+
+        function selectTemplateToUse(id) {
+            const tplList = globalAppData.templateList || [];
+            const chosen = tplList.find(t => t.id === id);
+            if (!chosen) return;
+
+            tplList.forEach(t => { t.active = (t.id === id); });
+            globalAppData.template = chosen;
+
+            loadTemplateIntoEditor(id, false);
+            renderTemplateList();
+            showNotification(`Templat "${chosen.name}" dipilih untuk pengiriman surel selanjutnya!`);
+
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler(() => {
+                        loadAppData(true);
+                    })
+                    .selectActiveTemplate(id);
+            }
+        }
+
+        function deleteTemplateItem(id) {
+            const tplList = globalAppData.templateList || [];
+            const target = tplList.find(t => t.id === id);
+            const tplName = target ? target.name : 'ini';
+
+            showConfirm('Hapus Templat Surel', `Apakah Anda yakin ingin menghapus templat "${tplName}"?`, () => {
+                showNotification('Menghapus templat...');
+                if (currentEditingTemplateId === id) {
+                    currentEditingTemplateId = null;
+                }
+                if (typeof google !== 'undefined' && google.script && google.script.run) {
+                    google.script.run
+                        .withSuccessHandler(() => {
+                            showNotification(`Templat "${tplName}" berhasil dihapus!`);
+                            loadAppData();
+                        })
+                        .deleteTemplateById(id);
+                }
+            });
+        }
+
+        function saveTemplateToBackend() {
+            const id = document.getElementById('tpl-id').value.trim();
+            const name = document.getElementById('tpl-name').value.trim();
+            const subject = document.getElementById('tpl-subject').value.trim();
+            const sender = document.getElementById('tpl-sender').value.trim();
+            const body = document.getElementById('tpl-editor').innerHTML;
+
+            if (!name) {
+                showNotification('Mohon isi Nama Templat terlebih dahulu!');
+                document.getElementById('tpl-name').focus();
+                return;
+            }
+            if (!subject) {
+                showNotification('Mohon isi Baris Subjek Surel terlebih dahulu!');
+                document.getElementById('tpl-subject').focus();
+                return;
+            }
+
+            const payload = { id, name, subject, sender, body };
+            showNotification('Menyimpan templat...');
+            
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler(res => {
+                        if (res && res.id) {
+                            currentEditingTemplateId = res.id;
+                            document.getElementById('tpl-id').value = res.id;
+                        }
+                        showNotification(`Templat "${name}" berhasil disimpan!`);
+                        loadAppData();
+                    })
+                    .saveTemplateConfig(payload);
+            }
+        }
+
+        // ================= PREVIEW & BLAST =================
+        let previewList = [];
+        let currentPreviewIndex = 0;
+        let previewSource = 'active'; // 'active' (dari dasbor) atau 'editor' (dari menu templat)
+
+        function openPreviewModalForChecked() {
+            previewList = globalAppData.recipients.filter(r => r._selected);
+            
+            if(previewList.length === 0) { showNotification('Pilih minimal satu penerima!'); return; }
+            const activeTpl = getActiveTemplate();
+            if (!activeTpl || (!activeTpl.subject && !activeTpl.body)) {
+                showNotification('Pilih atau buat templat surel terlebih dahulu di menu Templat Surat Elektronik!');
+                return;
+            }
+            previewSource = 'active';
+            currentPreviewIndex = 0;
+            renderCurrentPreview();
+            
+            document.getElementById('blast-progress-container').classList.add('hidden');
+            const startBtn = document.getElementById('btn-popup-start');
+            startBtn.disabled = false;
+            startBtn.classList.remove('hidden');
+            startBtn.classList.add('flex');
+            document.getElementById('btn-popup-start-text').innerText = 'Kirim Semua Tercentang';
+            document.getElementById('preview-modal').classList.remove('hidden');
+            document.getElementById('preview-modal').classList.add('flex');
+        }
+
+        function openPreviewModalSingle(email) {
+            const found = globalAppData.recipients.find(r => r.email === email);
+            if(found) {
+                const activeTpl = getActiveTemplate();
+                if (!activeTpl || (!activeTpl.subject && !activeTpl.body)) {
+                    showNotification('Pilih atau buat templat surel terlebih dahulu di menu Templat Surat Elektronik!');
+                    return;
+                }
+                previewSource = 'active';
+                previewList = [found];
+                currentPreviewIndex = 0;
+                renderCurrentPreview();
+                document.getElementById('blast-progress-container').classList.add('hidden');
+                const startBtn = document.getElementById('btn-popup-start');
+                startBtn.disabled = false;
+                startBtn.classList.remove('hidden');
+                startBtn.classList.add('flex');
+                document.getElementById('btn-popup-start-text').innerText = 'Kirim Surel Ini';
+                document.getElementById('preview-modal').classList.remove('hidden');
+                document.getElementById('preview-modal').classList.add('flex');
+            }
+        }
+
+        function openTemplatePreviewMain() {
+            if(globalAppData.recipients.length > 0) {
+                previewSource = 'editor';
+                previewList = [globalAppData.recipients[0]];
+                currentPreviewIndex = 0;
+                renderCurrentPreview();
+                document.getElementById('blast-progress-container').classList.add('hidden');
+                const startBtn = document.getElementById('btn-popup-start');
+                startBtn.classList.add('hidden');
+                startBtn.classList.remove('flex');
+                document.getElementById('preview-modal').classList.remove('hidden');
+                document.getElementById('preview-modal').classList.add('flex');
+            } else {
+                showNotification('Belum ada data penerima!');
+            }
+        }
+
+        function getTemplateForCurrentPreview() {
+            if (previewSource === 'editor') {
+                return {
+                    name: (document.getElementById('tpl-name').value || 'Draft Editor') + ' (Pratinjau Editor)',
+                    subject: document.getElementById('tpl-subject').value,
+                    sender: document.getElementById('tpl-sender').value,
+                    body: document.getElementById('tpl-editor').innerHTML
+                };
+            }
+            const activeTpl = getActiveTemplate();
+            return activeTpl || {
+                name: 'Belum Ada Templat Dipilih',
+                subject: '',
+                sender: '',
+                body: ''
+            };
+        }
+
+        function renderCurrentPreview() {
+            if(previewList.length === 0) return;
+            const data = previewList[currentPreviewIndex];
+            const tpl = getTemplateForCurrentPreview();
+
+            document.getElementById('preview-counter').innerText = `${currentPreviewIndex + 1} dari ${previewList.length}`;
+            const tplNameEl = document.getElementById('prev-template-name');
+            if (tplNameEl) tplNameEl.innerText = tpl.name || 'Templat Aktif';
+            document.getElementById('prev-sender').innerText = tpl.sender || '-';
+            document.getElementById('prev-name').innerText = data.penulis;
+            document.getElementById('prev-email').innerText = data.email; 
+            document.getElementById('prev-activity').innerText = data.kegiatan;
+            document.getElementById('prev-mapel').innerText = data.mapel;
+            document.getElementById('prev-subject-text').innerText = tpl.subject || '-';
+
+            const rawHtml = tpl.body || '';
+            
+            // Logika Preview yang diubah agar sesuai dengan teks default yang diminta
+            const parseLinkForPreview = (val, color, defaultText) => {
+                if(!val) return '-';
+                if(val.toLowerCase().startsWith('http') || (!val.includes(' ') && val.includes('.'))) {
+                    const href = val.toLowerCase().startsWith('http') ? val : 'https://' + val;
+                    return `<a href="${href}" target="_blank" style="color:${color};text-decoration:underline;font-weight:bold;">${defaultText}</a>`;
+                }
+                return `<strong>${val}</strong>`;
+            };
+
+            const dlHtml = parseLinkForPreview(data.download, '#2563eb', `Unduh Berkas: ${data.penulis}-${data.instansi}.pdf`);
+            const upHtml = parseLinkForPreview(data.upload, '#059669', 'Unggah Dokumen');
+
+            const rendered = rawHtml.replace(/{{Nama Penulis}}/g, data.penulis).replace(/{{Instansi}}/g, data.instansi)
+                                    .replace(/{{Nama Kegiatan}}/g, data.kegiatan).replace(/{{Mapel}}/g, data.mapel)
+                                    .replace(/{{Unduh File}}/g, dlHtml).replace(/{{Unggah File}}/g, upHtml);
+            document.getElementById('prev-rendered-body').innerHTML = rendered;
+        }
+
+        function navigatePreview(dir) {
+            currentPreviewIndex += dir;
+            if(currentPreviewIndex < 0) currentPreviewIndex = 0;
+            if(currentPreviewIndex >= previewList.length) currentPreviewIndex = previewList.length - 1;
+            renderCurrentPreview();
+        }
+
+        function closePreviewModal() {
+            document.getElementById('preview-modal').classList.add('hidden');
+            document.getElementById('preview-modal').classList.remove('flex');
+        }
+
+        function executeRealBlastFromPreview() {
+            const activeTpl = getActiveTemplate();
+            if (!activeTpl || (!activeTpl.subject && !activeTpl.body)) {
+                showNotification('Pilih templat yang akan digunakan terlebih dahulu!');
+                return;
+            }
+
+            const btn = document.getElementById('btn-popup-start');
+            btn.disabled = true;
+            document.getElementById('btn-popup-start-text').innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Mengirim via Gmail...`;
+
+            document.getElementById('blast-progress-container').classList.remove('hidden');
+            const bar = document.getElementById('popup-progress-bar');
+            const text = document.getElementById('popup-progress-text');
+            const statusLbl = document.getElementById('blast-status-label');
+
+            bar.style.width = '30%';
+            statusLbl.innerText = 'Proses Mengirim ke Server...';
+
+            previewList.forEach(item => { item.status = 'Proses'; });
+            renderDashboardStats();
+            updateTable();
+
+            // Gunakan templat yang dipilih (aktif) untuk pengiriman surel
+            const templatePayload = {
+                subject: activeTpl.subject,
+                sender: activeTpl.sender,
+                body: activeTpl.body
+            };
+
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler(res => {
+                        bar.style.width = '100%';
+                        text.innerText = `${res.count} dari ${previewList.length} terkirim`;
+                        statusLbl.innerText = 'Selesai';
+                        btn.disabled = false;
+                        document.getElementById('btn-popup-start-text').innerText = 'Selesai';
+                        showNotification(`Berhasil mengirim ${res.count} surel menggunakan "${activeTpl.name}"!`);
+                        
+                        setTimeout(() => {
+                            closePreviewModal();
+                            loadAppData(); // Refresh UI GSheet secara penuh
+                        }, 1500);
+                    })
+                    .withFailureHandler(err => {
+                        statusLbl.innerText = 'Gagal Mengirim';
+                        btn.disabled = false;
+                        document.getElementById('btn-popup-start-text').innerText = 'Coba Lagi';
+                        showNotification('Gagal mengirim: ' + err.message);
+                    })
+                    .sendBatchEmails(previewList, templatePayload);
+            }
+        }
+    </script>
+</body>
+</html>
